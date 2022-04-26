@@ -22,7 +22,7 @@ func jd(t time.Time) (day, nsec int64) {
 }
 
 // Date returns the Julian day number for t,
-// and the nanoseconds offset within that day,
+// and the nanosecond offset within that day,
 // in the range [0, 86399999999999].
 func Date(t time.Time) (day, nsec int64) {
 	day, nsec = jd(t)
@@ -38,6 +38,7 @@ func Date(t time.Time) (day, nsec int64) {
 }
 
 // Float returns the Julian date for t as a float64.
+//
 // In the XXI century, this has submillisecond precision.
 func Float(t time.Time) float64 {
 	day, nsec := jd(t)
@@ -46,6 +47,7 @@ func Float(t time.Time) float64 {
 }
 
 // Float returns the Julian date for t as a string.
+//
 // This has nanosecond precision.
 func Format(t time.Time) string {
 	var buf [32]byte
@@ -72,7 +74,7 @@ func AppendFormat(dst []byte, t time.Time) []byte {
 }
 
 // Time returns the UTC Time corresponding to the Julian day number
-// and nanoseconds offset within that day.
+// and nanosecond offset within that day.
 // Not all day values have a corresponding time value.
 func Time(day, nsec int64) time.Time {
 	return time.Unix((day-epoch_days)*secs_per_day-epoch_secs, nsec).UTC()
@@ -80,6 +82,7 @@ func Time(day, nsec int64) time.Time {
 
 // FloatTime returns the UTC Time corresponding to a Julian date.
 // Not all date values have a corresponding time value.
+//
 // In the XXI century, this has submillisecond precision.
 func FloatTime(date float64) time.Time {
 	day, frac := math.Modf(date)
@@ -88,6 +91,7 @@ func FloatTime(date float64) time.Time {
 }
 
 // Parse parses a formatted Julian date and returns the time value it represents.
+//
 // This has nanosecond precision.
 func Parse(s string) (time.Time, error) {
 	dot := -1
