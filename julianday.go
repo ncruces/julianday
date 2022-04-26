@@ -45,21 +45,24 @@ func Format(t time.Time) string {
 }
 
 func AppendFormat(dst []byte, t time.Time) []byte {
-	day, nsec := jd(t)
-	if nsec >= nsec_per_day {
+	day, nsec := Date(t)
+	if day < 0 && nsec > 0 {
 		day += 1
-		nsec -= nsec_per_day
+		nsec = nsec_per_day - nsec
 	}
 	dst = strconv.AppendInt(dst, day, 10)
 	pos := len(dst) - 1
 	tmp := dst[pos]
-	dst = strconv.AppendFloat(dst[:pos], math.Abs(float64(nsec))/nsec_per_day, 'f', -1, 64)
+	dst = strconv.AppendFloat(dst[:pos], float64(nsec)/nsec_per_day, 'f', -1, 64)
+	if len(dst) > pos+18 {
+		dst = dst[:pos+18]
+	}
 	dst[pos] = tmp
 	return dst
 }
 
 func Time(day, nsec int64) time.Time {
-	return time.Unix((day-epoch_days)*secs_per_day-epoch_secs, nsec)
+	return time.Unix((day-epoch_days)*secs_per_day-epoch_secs, nsec).UTC()
 }
 
 func FloatTime(date float64) time.Time {
@@ -70,8 +73,10 @@ func FloatTime(date float64) time.Time {
 
 func Parse(s string) (time.Time, error) {
 	dot := -1
+	digits := 0
 	for i, b := range []byte(s) {
 		if '0' <= b && b <= '9' {
+			digits++
 			continue
 		}
 		if b == '.' && dot < 0 {
@@ -83,7 +88,7 @@ func Parse(s string) (time.Time, error) {
 		}
 		return time.Time{}, errors.New("julianday: invalid syntax")
 	}
-	if len := len(s); len <= 1 && dot == len-1 {
+	if digits == 0 {
 		return time.Time{}, errors.New("julianday: invalid syntax")
 	}
 
