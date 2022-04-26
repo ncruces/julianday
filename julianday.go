@@ -1,3 +1,4 @@
+// Package julianday provides Time to Julian day conversions.
 package julianday
 
 import (
@@ -20,6 +21,9 @@ func jd(t time.Time) (day, nsec int64) {
 	return day, sec*nsec_per_sec + int64(t.Nanosecond())
 }
 
+// Date returns the Julian day number for t,
+// and the nanoseconds offset within that day,
+// in the range [0, 86399999999999].
 func Date(t time.Time) (day, nsec int64) {
 	day, nsec = jd(t)
 	switch {
@@ -33,17 +37,23 @@ func Date(t time.Time) (day, nsec int64) {
 	return day, nsec
 }
 
+// Float returns the Julian date for t as a float64.
+// In the XXI century, this has submillisecond precision.
 func Float(t time.Time) float64 {
 	day, nsec := jd(t)
 	// converting day and nsec to float64 is exact
 	return float64(day) + float64(nsec)/nsec_per_day
 }
 
+// Float returns the Julian date for t as a string.
+// This has nanosecond precision.
 func Format(t time.Time) string {
 	var buf [32]byte
 	return string(AppendFormat(buf[:0], t))
 }
 
+// AppendFormat is like Format but appends the textual representation to dst
+// and returns the extended buffer.
 func AppendFormat(dst []byte, t time.Time) []byte {
 	day, nsec := Date(t)
 	if day < 0 && nsec > 0 {
@@ -61,16 +71,24 @@ func AppendFormat(dst []byte, t time.Time) []byte {
 	return dst
 }
 
+// Time returns the UTC Time corresponding to the Julian day number
+// and nanoseconds offset within that day.
+// Not all day values have a corresponding time value.
 func Time(day, nsec int64) time.Time {
 	return time.Unix((day-epoch_days)*secs_per_day-epoch_secs, nsec).UTC()
 }
 
+// FloatTime returns the UTC Time corresponding to a Julian date.
+// Not all date values have a corresponding time value.
+// In the XXI century, this has submillisecond precision.
 func FloatTime(date float64) time.Time {
 	day, frac := math.Modf(date)
 	nsec := math.Floor(frac * nsec_per_day)
 	return Time(int64(day), int64(nsec))
 }
 
+// Parse parses a formatted Julian date and returns the time value it represents.
+// This has nanosecond precision.
 func Parse(s string) (time.Time, error) {
 	dot := -1
 	digits := 0
