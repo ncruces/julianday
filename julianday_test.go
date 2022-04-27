@@ -72,8 +72,8 @@ func TestDate_beforeMidday(t *testing.T) {
 
 func TestFloat(t *testing.T) {
 	got := Float(reference)
-	if got != 2440423.4289351851851852 {
-		t.Errorf("Float() got = %f, want %f", got, 2440423.4289351851851852)
+	if got != 2440423.428935185185185 {
+		t.Errorf("Float() got = %f, want %f", got, 2440423.428935185185185)
 	}
 }
 
@@ -109,8 +109,8 @@ func TestFloat_beforeMidday(t *testing.T) {
 
 func TestFormat(t *testing.T) {
 	got := Format(reference)
-	if got != "2440423.4289351851851852" {
-		t.Errorf("Format() got = %s, want %s", got, "2440423.4289351851851852")
+	if got != "2440423.428935185185185" {
+		t.Errorf("Format() got = %s, want %s", got, "2440423.428935185185185")
 	}
 }
 
@@ -157,15 +157,48 @@ func TestTime(t *testing.T) {
 	}
 }
 
+func TestTime_midday(t *testing.T) {
+	for _, tt := range years {
+		date := time.Date(tt.year, 1, 1, 12, 0, 0, 0, time.UTC)
+		day, nsec := Date(date)
+		got := Time(day, nsec)
+		if !got.Equal(date) {
+			t.Errorf("Time() got = %v, want %v", got, date)
+		}
+	}
+}
+
+func TestTime_afterMidday(t *testing.T) {
+	for _, tt := range years {
+		date := time.Date(tt.year, 1, 1, 12, 0, 0, 1, time.UTC)
+		day, nsec := Date(date)
+		got := Time(day, nsec)
+		if !got.Equal(date) {
+			t.Errorf("Time() got = %v, want %v", got, date)
+		}
+	}
+}
+
+func TestTime_beforeMidday(t *testing.T) {
+	for _, tt := range years {
+		date := time.Date(tt.year, 1, 1, 11, 59, 59, nsec_per_sec-1, time.UTC)
+		day, nsec := Date(date)
+		got := Time(day, nsec)
+		if !got.Equal(date) {
+			t.Errorf("Time() got = %v, want %v", got, date)
+		}
+	}
+}
+
 func TestFloatTime(t *testing.T) {
-	got := FloatTime(2440423.4289351851851852)
+	got := FloatTime(2440423.428935185185185)
 	if got = got.Round(time.Millisecond); !got.Equal(reference) {
 		t.Errorf("FloatTime() got = %v, want %v", got, reference)
 	}
 }
 
 func TestParse(t *testing.T) {
-	got, err := Parse("2440423.4289351851851852")
+	got, err := Parse("2440423.428935185185185")
 	if err != nil {
 		t.Errorf("Parse() got = %v", err)
 	}
@@ -187,7 +220,7 @@ func TestParse_date(t *testing.T) {
 }
 
 func TestParse_clock(t *testing.T) {
-	got, err := Parse(".4289351851851852")
+	got, err := Parse(".428935185185185")
 	if err != nil {
 		t.Errorf("Parse() got = %v", err)
 	}
@@ -203,6 +236,48 @@ func TestParse_invalid(t *testing.T) {
 	for _, s := range invalids {
 		if got, err := Parse(s); err == nil {
 			t.Errorf("Parse() got = (%v, %v)", got, err)
+		}
+	}
+}
+
+func TestParse_midday(t *testing.T) {
+	for _, tt := range years {
+		date := time.Date(tt.year, 1, 1, 12, 0, 0, 0, time.UTC)
+		str := Format(date)
+		got, err := Parse(str)
+		if err != nil {
+			t.Errorf("Parse() got = %v", err)
+		}
+		if !got.Equal(date) {
+			t.Errorf("Parse() got = %v, want %v", got, date)
+		}
+	}
+}
+
+func TestParse_afterMidday(t *testing.T) {
+	for _, tt := range years {
+		date := time.Date(tt.year, 1, 1, 12, 0, 0, 1, time.UTC)
+		str := Format(date)
+		got, err := Parse(str)
+		if err != nil {
+			t.Errorf("Parse() got = %v", err)
+		}
+		if !got.Equal(date) {
+			t.Errorf("Parse() got = %v, want %v", got, date)
+		}
+	}
+}
+
+func TestParse_beforeMidday(t *testing.T) {
+	for _, tt := range years {
+		date := time.Date(tt.year, 1, 1, 11, 59, 59, nsec_per_sec-1, time.UTC)
+		str := Format(date)
+		got, err := Parse(str)
+		if err != nil {
+			t.Errorf("Parse() got = %v", err)
+		}
+		if !got.Equal(date) {
+			t.Errorf("Parse() got = %v, want %v", got, date)
 		}
 	}
 }

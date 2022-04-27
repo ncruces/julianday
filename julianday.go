@@ -2,6 +2,7 @@
 package julianday
 
 import (
+	"bytes"
 	"errors"
 	"math"
 	"strconv"
@@ -58,19 +59,14 @@ func Format(t time.Time) string {
 // and returns the extended buffer.
 func AppendFormat(dst []byte, t time.Time) []byte {
 	day, nsec := Date(t)
-	if day < 0 && nsec > 0 {
+	if day < 0 && nsec != 0 {
 		day += 1
 		nsec = nsec_per_day - nsec
 	}
+	var buf [20]byte
 	dst = strconv.AppendInt(dst, day, 10)
-	pos := len(dst) - 1
-	tmp := dst[pos]
-	dst = strconv.AppendFloat(dst[:pos], float64(nsec)/nsec_per_day, 'f', -1, 64)
-	if len(dst) > pos+18 {
-		dst = dst[:pos+18]
-	}
-	dst[pos] = tmp
-	return dst
+	frac := strconv.AppendFloat(buf[:0], float64(nsec)/nsec_per_day, 'f', 15, 64)
+	return append(dst, bytes.TrimRight(frac[1:], ".0")...)
 }
 
 // Time returns the UTC Time corresponding to the Julian day number
@@ -114,15 +110,18 @@ func Parse(s string) (time.Time, error) {
 		return time.Time{}, errors.New("julianday: invalid syntax")
 	}
 
-	var day, nsec int64
+	var day int64
 	if dot < 0 {
 		day, _ = strconv.ParseInt(s, 10, 64)
-	} else {
-		if dot > 0 {
-			day, _ = strconv.ParseInt(s[:dot], 10, 64)
-		}
-		frac, _ := strconv.ParseFloat(s[dot:], 64)
-		nsec = int64(math.Floor(frac * nsec_per_day))
+		return Time(day, 0), nil
+	}
+	if dot > 0 {
+		day, _ = strconv.ParseInt(s[:dot], 10, 64)
+	}
+	frac, _ := strconv.ParseFloat(s[dot:], 64)
+	nsec := int64(math.Round(frac * nsec_per_day))
+	if day < 0 {
+		nsec = -nsec
 	}
 	return Time(day, nsec), nil
 }
