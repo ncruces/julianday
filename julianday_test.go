@@ -77,6 +77,15 @@ func TestFloat(t *testing.T) {
 	}
 }
 
+func TestFloat_sqlite(t *testing.T) {
+	// https://www.sqlite.org/lang_datefunc.html
+	date, _ := time.Parse(time.RFC3339Nano, "2013-10-07T08:23:19.120Z")
+	got := Float(date)
+	if got != 2456572.849526852 {
+		t.Errorf("Float() got = %g, want %g", got, 2456572.849526852)
+	}
+}
+
 func TestFloat_midday(t *testing.T) {
 	for _, tt := range years {
 		date := time.Date(tt.year, 1, 1, 12, 0, 0, 0, time.UTC)
@@ -232,7 +241,7 @@ func TestParse_clock(t *testing.T) {
 }
 
 func TestParse_invalid(t *testing.T) {
-	invalids := [...]string{"", ".", "+", "-", "..", "+.", "0+", "am"}
+	invalids := [...]string{"", ".", "+", "-", "..", "+.", "0+", "am", "10000000000000000000"}
 	for _, s := range invalids {
 		if got, err := Parse(s); err == nil {
 			t.Errorf("Parse() got = (%v, %v)", got, err)

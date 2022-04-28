@@ -60,7 +60,8 @@ func Format(t time.Time) string {
 func AppendFormat(dst []byte, t time.Time) []byte {
 	day, nsec := Date(t)
 	if day < 0 && nsec != 0 {
-		day += 1
+		dst = append(dst, '-')
+		day = ^day
 		nsec = nsec_per_day - nsec
 	}
 	var buf [20]byte
@@ -90,14 +91,14 @@ func FloatTime(date float64) time.Time {
 //
 // This has nanosecond precision.
 func Parse(s string) (time.Time, error) {
-	dot := -1
 	digits := 0
+	dot := len(s)
 	for i, b := range []byte(s) {
 		if '0' <= b && b <= '9' {
 			digits++
 			continue
 		}
-		if b == '.' && dot < 0 {
+		if b == '.' && i < dot {
 			dot = i
 			continue
 		}
@@ -110,17 +111,13 @@ func Parse(s string) (time.Time, error) {
 		return time.Time{}, errors.New("julianday: invalid syntax")
 	}
 
-	var day int64
-	if dot < 0 {
-		day, _ = strconv.ParseInt(s, 10, 64)
-		return Time(day, 0), nil
-	}
-	if dot > 0 {
-		day, _ = strconv.ParseInt(s[:dot], 10, 64)
+	day, err := strconv.ParseInt(s[:dot], 10, 64)
+	if err != nil && dot > 0 {
+		return time.Time{}, errors.New("julianday: value out of range")
 	}
 	frac, _ := strconv.ParseFloat(s[dot:], 64)
 	nsec := int64(math.Round(frac * nsec_per_day))
-	if day < 0 {
+	if s[0] == '-' {
 		nsec = -nsec
 	}
 	return Time(day, nsec), nil
