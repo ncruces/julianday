@@ -1,19 +1,13 @@
 //go:build go1.18
 
-package julianday_test
+package julianday
 
 import (
 	"math"
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/ncruces/julianday"
 )
-
-const secs_per_day = 86_400
-const nsec_per_sec = 1_000_000_000
-const nsec_per_day = nsec_per_sec * secs_per_day
 
 func FuzzUnixDateTime(f *testing.F) {
 	add := func(sec, nsec int64) { f.Add(sec, nsec) }
@@ -21,12 +15,14 @@ func FuzzUnixDateTime(f *testing.F) {
 	add(0, 0)
 	add(math.MinInt64, 0)
 	add(math.MaxInt64, 0)
+	add(math.MinInt64/2, 0)
+	add(math.MaxInt64/2, 0)
 	add(math.MinInt64, 999_999_999)
 	add(math.MaxInt64, 999_999_999)
 
 	f.Fuzz(func(t *testing.T, sec, nsec int64) {
 		tm := time.Unix(sec, nsec).UTC()
-		if got := julianday.Time(julianday.Date(tm)); !tm.Equal(got) {
+		if got := Time(Date(tm)); !tm.Equal(got) {
 			t.Errorf("Time(Date(%v)) = %v", tm, got)
 		}
 	})
@@ -38,12 +34,14 @@ func FuzzUnixFormatParse(f *testing.F) {
 	add(0, 0)
 	add(math.MinInt64, 0)
 	add(math.MaxInt64, 0)
+	add(math.MinInt64/2, 0)
+	add(math.MaxInt64/2, 0)
 	add(math.MinInt64, 999_999_999)
 	add(math.MaxInt64, 999_999_999)
 
 	f.Fuzz(func(t *testing.T, sec, nsec int64) {
 		tm := time.Unix(sec, nsec).UTC()
-		got, err := julianday.Parse(julianday.Format(tm))
+		got, err := Parse(Format(tm))
 		if err != nil {
 			t.Errorf("Parse(Format(%v)) = %v", tm, err)
 		}
@@ -61,12 +59,14 @@ func FuzzFloatTime(f *testing.F) {
 	add(0)
 	add(minJD)
 	add(maxJD)
+	add(2440423.428935185185185)
+	add(2456572.849526852)
 
 	f.Fuzz(func(t *testing.T, f float64) {
 		if f < minJD || f > maxJD {
 			t.SkipNow()
 		}
-		got := julianday.Float(julianday.FloatTime(f))
+		got := Float(FloatTime(f))
 		if !nearlyEqual(f, got, 2, 2.0/nsec_per_day) { // nanosecond accuracy
 			t.Errorf("Float(FloatTime(%g)) = %g", f, got)
 		}
@@ -74,13 +74,17 @@ func FuzzFloatTime(f *testing.F) {
 }
 
 func FuzzParseFloat(f *testing.F) {
-	invalids := [...]string{"", ".", "+", "-", "..", "+.", "0+", "am", "10000000000000000000"}
-	for _, s := range invalids {
+	seed := [...]string{
+		"2440423.428935185185185",
+		"2440423", ".428935185185185",
+		"", ".", "+", "-", "..", "+.", "0+", "am", "10000000000000000000",
+	}
+	for _, s := range seed {
 		f.Add(s)
 	}
 
 	f.Fuzz(func(t *testing.T, s string) {
-		parsed, err := julianday.Parse(s)
+		parsed, err := Parse(s)
 		if err != nil && !parsed.IsZero() {
 			t.Errorf("Parse(%q) = (%v, %v)", s, parsed, err)
 		}
@@ -97,7 +101,7 @@ func FuzzParseFloat(f *testing.F) {
 		if f < minJD || f > maxJD {
 			t.SkipNow()
 		}
-		got := julianday.Float(parsed)
+		got := Float(parsed)
 		if !nearlyEqual(f, got, 2, 2.0/nsec_per_day) { // nanosecond accuracy
 			t.Errorf("Float(Parse(%q)) = %g", s, got)
 		}
